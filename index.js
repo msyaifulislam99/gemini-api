@@ -1,9 +1,9 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+import express from 'express';
+import dotenv from 'dotenv';
+import multer from 'multer';
+import fs from 'fs';
+import cors from 'cors';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 dotenv.config();
 
@@ -16,7 +16,11 @@ const model = genAI.getGenerativeModel({
 });
 const upload = multer({ dest: 'uploads/' });
 
-const PORT = process.env.PORT || 3002;
+app.use(cors())
+app.use(express.json());
+app.use(express.static('public'));
+
+const PORT = process.env.PORT || 3003;
 app.get('/', (req, res) => {
   res.send('Welcome to the Gemini AI Image Generation API');
 });
@@ -122,6 +126,27 @@ app.post('/generate-from-audio', upload.single('audio'), async (req, res) => {
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
+    }
+});
+
+// 4th session it developer batch 2
+app.post('/api/chat', async (req, res) => {
+    const { message } = req.body;
+    if (!message) {
+        return res.status(400).json({ error: 'Messages is required' });
+    }
+
+    try {
+        const result = await model.generateContent(message);
+
+        const response = await result.response;
+
+        return res.json({
+            reply: response.text(),
+        });
+    } catch (error) {
+        console.error('Error in chat generation:', error);
+        res.status(500).json({ error: 'something went wrong.', message: error.message });
     }
 });
 
